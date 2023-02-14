@@ -44,7 +44,7 @@ ros2 launch cargo_loading_service cargo_loading_service.launch.py log-level:=deb
 
 ```sh
 # Terminal-2
-ros2 topic pub /in_parking/state in_parking_msgs/msg/InParkingStatus "{stamp: {sec: 1, nanosec: 1}, aw_state: 3, vehicle_operation_mode: 1, on_arrived_goal: true}"
+ros2 topic pub /in_parking/state in_parking_msgs/msg/InParkingStatus "{stamp: {sec: 1, nanosec: 1}, aw_state: 3, vehicle_operation_mode: 1}"
 ```
 
 ### Step.2
