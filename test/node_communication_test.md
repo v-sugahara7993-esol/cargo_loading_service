@@ -22,9 +22,9 @@ The correspondence between the test objects and the point of view is as follows.
 
 |Test Target No.|Test Target|Check Point No.|
 |---|---|---|
-|1| `/awapi/tmp/cargo_loading_state`              |1|
+|1| `/parking/cargo_loading_state`                |1|
 |2| `/in_parking/state`                           |2|
-|3| `/system/v2x/infrastructure_status`           |2|
+|3| `/infrastructure_status`                      |2|
 |4| `/parking/cargo_loading`                      |3|
 |5| `/parking/cargo_loading`                      |4|
 
@@ -49,7 +49,7 @@ ros2 topic pub /in_parking/state in_parking_msgs/msg/InParkingStatus "{stamp: {s
 
 ```sh
 # Terminal-3
-ros2 topic echo /awapi/tmp/cargo_loading_state
+ros2 topic echo /parking/cargo_loading_state
 ```
 
 ```sh
@@ -67,9 +67,9 @@ ros2 service call /parking/cargo_loading in_parking_msgs/srv/ExecuteInParkingTas
 
 ```sh
 # Terminal-6
-ros2 topic pub --once /system/v2x/infrastructure_status cargo_loading_msgs/msg/LoadingInfrastructureStateArray "{stamp: {sec: 1, nanosec: 1}, states: [{stamp: {sec: 1, nanosec: 1}, type: 'eva_beacon_system', id: '201', approval: true, is_finalized: false}]}"
+ros2 topic pub --once /infrastructure_status v2i_interface_msgs/msg/InfrastructureStateArray "{stamp: {sec: 1, nanosec: 1}, states: [{stamp: {sec: 1, nanosec: 1}, type: 'eva_beacon_system', id: '201', approval: true}]}"
 
-ros2 topic pub --once /system/v2x/infrastructure_status cargo_loading_msgs/msg/LoadingInfrastructureStateArray "{stamp: {sec: 1, nanosec: 1}, states: [{stamp: {sec: 1, nanosec: 1}, type: 'eva_beacon_system', id: '200', approval: true, is_finalized: false}]}"
+ros2 topic pub --once /infrastructure_status v2i_interface_msgs/msg/InfrastructureStateArray "{stamp: {sec: 1, nanosec: 1}, states: [{stamp: {sec: 1, nanosec: 1}, type: 'eva_beacon_system', id: '200', approval: true}]}"
 ```
 
 ## Test report
@@ -90,7 +90,7 @@ Steps for which there are no items to check are omitted from the heading, since 
 
 ```sh
 # Terminal-1
-[component_container_mt-1] [DEBUG] [1676427445.268577335] [cargo_loading.cargo_loading_service]: Subscribed /in_parking/state:stamp:
+[component_container_mt-1] [DEBUG] [1676440283.026451770] [cargo_loading.cargo_loading_service]: Subscribed /in_parking/state:stamp:
 [component_container_mt-1]   sec: 1
 [component_container_mt-1]   nanosec: 1
 [component_container_mt-1] aw_state: 3
@@ -104,7 +104,7 @@ Steps for which there are no items to check are omitted from the heading, since 
 **Test Target No.1**
 
 - Expectation
-  - `/awapi/tmp/cargo_loading_state`
+  - `/parking/cargo_loading_state`
     - Send interval 200msec.
 - Result
   - OK
@@ -112,34 +112,34 @@ Steps for which there are no items to check are omitted from the heading, since 
 ```sh
 # Terminal-3
 stamp:
-  sec: 1676427548
-  nanosec: 197428557
+  sec: 1676440891
+  nanosec: 175108980
 commands:
 - stamp:
-    sec: 1676427548
-    nanosec: 197428557
+    sec: 1676440891
+    nanosec: 175108980
   type: eva_beacon_system
   id: '200'
   state: 1
 ---
 stamp:
-  sec: 1676427548
-  nanosec: 397629311
+  sec: 1676440891
+  nanosec: 375340288
 commands:
 - stamp:
-    sec: 1676427548
-    nanosec: 397629311
+    sec: 1676440891
+    nanosec: 375340288
   type: eva_beacon_system
   id: '200'
   state: 1
 ---
 stamp:
-  sec: 1676427548
-  nanosec: 597785106
+  sec: 1676440891
+  nanosec: 575501214
 commands:
 - stamp:
-    sec: 1676427548
-    nanosec: 597785106
+    sec: 1676440891
+    nanosec: 575501214
   type: eva_beacon_system
   id: '200'
   state: 1
@@ -150,14 +150,14 @@ commands:
 **Test Target No.3**
 
 - Expectation
-  - `/system/v2x/infrastructure_status`
+  - `/infrastructure_status`
     - cargo_loading_service outputs the contents of the subscribed messages to the debug log.
 - Result
   - OK
 
 ```sh
 # Terminal-1
-[component_container_mt-1] [DEBUG] [1676428070.435721084] [cargo_loading.cargo_loading_service]: Subscribed /system/v2x/cargo_loading_status:stamp:
+[component_container_mt-1] [DEBUG] [1676441102.955167577] [cargo_loading.cargo_loading_service]: Subscribed /infrastructure_status:stamp:
 [component_container_mt-1]   sec: 1
 [component_container_mt-1]   nanosec: 1
 [component_container_mt-1] states:
@@ -168,7 +168,6 @@ commands:
 [component_container_mt-1]   type: "eva_beacon_system"
 [component_container_mt-1]   id: "200"
 [component_container_mt-1]   approval: true
-[component_container_mt-1]   is_finalized: false
 [component_container_mt-1] 
 ```
 

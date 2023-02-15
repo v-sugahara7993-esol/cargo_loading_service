@@ -51,7 +51,7 @@ CargoLoadingService::CargoLoadingService(
 
   // Publisher
   pub_cargo_loading_state_ = this->create_publisher<v2i_interface_msgs::msg::InfrastructureCommandArray>(
-    "/awapi/tmp/cargo_loading_state", rclcpp::QoS{3}.transient_local());
+    "/parking/cargo_loading_state", rclcpp::QoS{3}.transient_local());
 
   // Subscriber
   sub_parking_state_ =
@@ -60,8 +60,8 @@ CargoLoadingService::CargoLoadingService(
     std::bind(&CargoLoadingService::onParkingState, this, std::placeholders::_1),
     subscribe_option);
   sub_cargo_loading_state_ =
-    this->create_subscription<cargo_loading_msgs::msg::LoadingInfrastructureStateArray>(
-    "/system/v2x/infrastructure_status", rclcpp::QoS{1},
+    this->create_subscription<v2i_interface_msgs::msg::InfrastructureStateArray>(
+    "/infrastructure_status", rclcpp::QoS{1},
     std::bind(&CargoLoadingService::onCargoLoadingState, this, std::placeholders::_1),
     subscribe_option);
 }
@@ -97,14 +97,14 @@ void CargoLoadingService::execCargoLoading(
       aw_state = aw_state_;
     }
     if (aw_state == InParkingStatus::AW_EMERGENCY) {
-      command.state = InfrastructureCommand::ERROR;
+      command.state = cmd_error_;
     } else if (aw_state == InParkingStatus::AW_OUT_OF_PLACE) {
       command.state = InfrastructureCommand::SEND_ZERO;
     } else if (aw_state == InParkingStatus::AW_NONE) {
       response->state = ExecuteInParkingTaskResponse::FAIL;
       break;
     } else {
-      command.state = InfrastructureCommand::REQUESTING;
+      command.state = cmd_requesting_;
     }
     InfrastructureCommandArray command_array;
     auto stamp = this->get_clock()->now();
@@ -144,7 +144,7 @@ void CargoLoadingService::onParkingState(
 }
 
 void CargoLoadingService::onCargoLoadingState(
-  const cargo_loading_msgs::msg::LoadingInfrastructureStateArray::ConstSharedPtr msg)
+  const v2i_interface_msgs::msg::InfrastructureStateArray::ConstSharedPtr msg)
 {
   {
     std::lock_guard<std::mutex> lock(mutex_cargo_loading_state_);
@@ -154,7 +154,7 @@ void CargoLoadingService::onCargoLoadingState(
       }
     }
   }
-  RCLCPP_DEBUG(this->get_logger(), "Subscribed /system/v2x/cargo_loading_status:%s",
+  RCLCPP_DEBUG(this->get_logger(), "Subscribed /infrastructure_status:%s",
                rosidl_generator_traits::to_yaml(*msg).c_str());
 }
 }  // namespace cargo_loading_service

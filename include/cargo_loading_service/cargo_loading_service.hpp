@@ -22,8 +22,8 @@
 #include "in_parking_msgs/msg/in_parking_status.hpp"
 #include "v2i_interface_msgs/msg/infrastructure_command.hpp"
 #include "v2i_interface_msgs/msg/infrastructure_command_array.hpp"
-#include "cargo_loading_msgs/msg/loading_infrastructure_state.hpp"
-#include "cargo_loading_msgs/msg/loading_infrastructure_state_array.hpp"
+#include "v2i_interface_msgs/msg/infrastructure_state.hpp"
+#include "v2i_interface_msgs/msg/infrastructure_state_array.hpp"
 
 namespace cargo_loading_service
 {
@@ -37,7 +37,10 @@ private:
   using ExecuteInParkingTask = in_parking_msgs::srv::ExecuteInParkingTask;
   using InfrastructureCommandArray = v2i_interface_msgs::msg::InfrastructureCommandArray;
   using InParkingStatus = in_parking_msgs::msg::InParkingStatus;
-  using LoadingInfrastructureStateArray = cargo_loading_msgs::msg::LoadingInfrastructureStateArray;
+  using InfrastructureStateArray = v2i_interface_msgs::msg::InfrastructureStateArray;
+
+  const uint32_t cmd_requesting_ = 1;
+  const uint32_t cmd_error_ = 2;
 
   std::mutex mutex_cargo_loading_state_;
   std::mutex mutex_parking_state_;
@@ -59,14 +62,14 @@ private:
 
   // Subscriber
   rclcpp::Subscription<InParkingStatus>::SharedPtr sub_parking_state_;
-  rclcpp::Subscription<LoadingInfrastructureStateArray>::SharedPtr sub_cargo_loading_state_;
+  rclcpp::Subscription<InfrastructureStateArray>::SharedPtr sub_cargo_loading_state_;
 
   // Callback
   void execCargoLoading(
     const ExecuteInParkingTask::Request::SharedPtr request,
     const ExecuteInParkingTask::Response::SharedPtr response);
   void onParkingState(const InParkingStatus::ConstSharedPtr msg_ptr);
-  void onCargoLoadingState(const LoadingInfrastructureStateArray::ConstSharedPtr msg_ptr);
+  void onCargoLoadingState(const InfrastructureStateArray::ConstSharedPtr msg_ptr);
 };
 
 }  // namespace cargo_loading_service
