@@ -11,6 +11,9 @@ The following aspects are tested.
 |3|Must be able to respond to requests for service communication. In the sequence diagram of the module design document, the service provided by own module/own node corresponds.|
 |4|Do not respond when not ready to accept a request for service communication. In the sequence diagram of the module design document, the service provided by own module/own node corresponds.|
 
+* About checkpoint 4 in this module  
+   The services handled by this module are ready immediately after node startup. Therefore, it is impossible to check this checkpoint.
+
 The following are excluded from this test
 
 * Specific request/response values included in the topic or service.
@@ -22,11 +25,10 @@ The correspondence between the test objects and the point of view is as follows.
 
 |Test Target No.|Test Target|Check Point No.|
 |---|---|---|
-|1| `/parking/cargo_loading_state`                |1|
+|1| `/cargo_loading/infrastructure_commands`      |1|
 |2| `/in_parking/state`                           |2|
 |3| `/infrastructure_status`                      |2|
 |4| `/parking/cargo_loading`                      |3|
-|5| `/parking/cargo_loading`                      |4|
 
 ## Test procedure
 
@@ -49,7 +51,7 @@ ros2 topic pub /in_parking/state in_parking_msgs/msg/InParkingStatus "{stamp: {s
 
 ```sh
 # Terminal-3
-ros2 topic echo /parking/cargo_loading_state
+ros2 topic echo /cargo_loading/infrastructure_commands
 ```
 
 ```sh
@@ -62,13 +64,6 @@ ros2 service call /parking/cargo_loading in_parking_msgs/srv/ExecuteInParkingTas
 
 ```sh
 # Terminal-5
-ros2 service call /parking/cargo_loading in_parking_msgs/srv/ExecuteInParkingTask "{key: '100', value: '201'}"
-```
-
-```sh
-# Terminal-6
-ros2 topic pub --once /infrastructure_status v2i_interface_msgs/msg/InfrastructureStateArray "{stamp: {sec: 1, nanosec: 1}, states: [{stamp: {sec: 1, nanosec: 1}, type: 'eva_beacon_system', id: '201', approval: true}]}"
-
 ros2 topic pub --once /infrastructure_status v2i_interface_msgs/msg/InfrastructureStateArray "{stamp: {sec: 1, nanosec: 1}, states: [{stamp: {sec: 1, nanosec: 1}, type: 'eva_beacon_system', id: '200', approval: true}]}"
 ```
 
@@ -104,7 +99,7 @@ Steps for which there are no items to check are omitted from the heading, since 
 **Test Target No.1**
 
 - Expectation
-  - `/parking/cargo_loading_state`
+  - `/cargo_loading/infrastructure_commands`
     - Send interval 200msec.
 - Result
   - OK
@@ -185,20 +180,5 @@ requester: making request: in_parking_msgs.srv.ExecuteInParkingTask_Request(key=
 
 response:
 in_parking_msgs.srv.ExecuteInParkingTask_Response(state=1)
-
-```
-
-**Test Target No.5**
-
-- Expectation
-  - `/parking/cargo_loading`
-    - When two service requests are submitted, the later one does not receive a response.
-- Result
-  - OK
-
-```sh
-# Terminal-5
-requester: making request: in_parking_msgs.srv.ExecuteInParkingTask_Request(key='100', value='201')
-
 
 ```

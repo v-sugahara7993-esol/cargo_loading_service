@@ -22,8 +22,7 @@ namespace cargo_loading_service
 CargoLoadingService::CargoLoadingService(
   const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
 : Node("cargo_loading_service", options),
-  target_id_(""),
-  approval_(false),
+  facility_info_({"", false}),
   aw_state_(in_parking_msgs::msg::InParkingStatus::AW_NONE)
 {
   using std::placeholders::_1;
@@ -51,7 +50,7 @@ CargoLoadingService::CargoLoadingService(
 
   // Publisher
   pub_cargo_loading_state_ = this->create_publisher<v2i_interface_msgs::msg::InfrastructureCommandArray>(
-    "/parking/cargo_loading_state", rclcpp::QoS{3}.transient_local());
+    "/cargo_loading/infrastructure_commands", rclcpp::QoS{3}.transient_local());
 
   // Subscriber
   sub_parking_state_ =
@@ -75,6 +74,7 @@ void CargoLoadingService::execCargoLoading(
   using InParkingStatus = in_parking_msgs::msg::InParkingStatus;
   using ExecuteInParkingTaskResponse = in_parking_msgs::srv::ExecuteInParkingTask::Response;
 
+  uint8_t response_state = ExecuteInParkingTaskResponse::SUCCESS;
   bool cmd_pub = true;
   int32_t aw_state;
 
@@ -83,11 +83,11 @@ void CargoLoadingService::execCargoLoading(
   command.type = "eva_beacon_system";
   command.id = request->value;
 
-  target_id_ = request->value;
+  facility_info_.id = request->value;
 
   {
     std::lock_guard<std::mutex> lock(mutex_cargo_loading_state_);
-    approval_ = false;
+    facility_info_.approval = false;
   }
 
   // Publish command
@@ -97,14 +97,14 @@ void CargoLoadingService::execCargoLoading(
       aw_state = aw_state_;
     }
     if (aw_state == InParkingStatus::AW_EMERGENCY) {
-      command.state = cmd_error_;
+      command.state = ERROR;
     } else if (aw_state == InParkingStatus::AW_OUT_OF_PLACE) {
       command.state = InfrastructureCommand::SEND_ZERO;
     } else if (aw_state == InParkingStatus::AW_NONE) {
-      response->state = ExecuteInParkingTaskResponse::FAIL;
+      response_state = ExecuteInParkingTaskResponse::FAIL;
       break;
     } else {
-      command.state = cmd_requesting_;
+      command.state = REQUESTING;
     }
     InfrastructureCommandArray command_array;
     auto stamp = this->get_clock()->now();
@@ -115,21 +115,21 @@ void CargoLoadingService::execCargoLoading(
     rclcpp::sleep_for(command_pub_sleep_time_);
     {
       std::lock_guard<std::mutex> lock(mutex_cargo_loading_state_);
-      if (approval_) {
+      if (facility_info_.approval) {
         cmd_pub = false;
       }
     }
   }
 
   // Initialize class variables
-  target_id_ = "";
+  facility_info_.id = "";
   {
     std::lock_guard<std::mutex> lock(mutex_cargo_loading_state_);
-    approval_ = false;
+    facility_info_.approval = false;
   }
 
   // Response
-  response->state = ExecuteInParkingTaskResponse::SUCCESS;
+  response->state = response_state;
 }
 
 void CargoLoadingService::onParkingState(
@@ -149,8 +149,8 @@ void CargoLoadingService::onCargoLoadingState(
   {
     std::lock_guard<std::mutex> lock(mutex_cargo_loading_state_);
     for (const auto & state : msg->states) {
-      if (state.id.compare(target_id_) == 0) {
-        approval_ = state.approval;
+      if (state.id.compare(facility_info_.id) == 0) {
+        facility_info_.approval = state.approval;
       }
     }
   }

@@ -39,13 +39,15 @@ private:
   using InParkingStatus = in_parking_msgs::msg::InParkingStatus;
   using InfrastructureStateArray = v2i_interface_msgs::msg::InfrastructureStateArray;
 
-  const uint32_t cmd_requesting_ = 1;
-  const uint32_t cmd_error_ = 2;
+  static constexpr uint8_t REQUESTING = 1;
+  static constexpr uint8_t ERROR = 2;
 
   std::mutex mutex_cargo_loading_state_;
   std::mutex mutex_parking_state_;
-  std::string target_id_;
-  bool approval_;
+  struct FacilityInfo {
+    std::string id;
+    bool approval;
+  } facility_info_;
   int32_t aw_state_;
   std::chrono::nanoseconds command_pub_sleep_time_;
   double cargo_loading_command_pub_hz_;
