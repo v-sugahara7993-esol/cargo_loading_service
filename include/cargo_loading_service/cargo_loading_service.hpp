@@ -16,10 +16,10 @@
 #define CARGO_LOADING_SERVICE__CARGO_LOADING_SERVICE_HPP_
 
 #include "rclcpp/rclcpp.hpp"
-
 #include "tier4_api_utils/tier4_api_utils.hpp"
-#include "in_parking_msgs/srv/execute_in_parking_task.hpp"
+
 #include "in_parking_msgs/msg/in_parking_status.hpp"
+#include "in_parking_msgs/srv/execute_in_parking_task.hpp"
 #include "v2i_interface_msgs/msg/infrastructure_command.hpp"
 #include "v2i_interface_msgs/msg/infrastructure_command_array.hpp"
 #include "v2i_interface_msgs/msg/infrastructure_state.hpp"
@@ -42,13 +42,8 @@ private:
   using InfrastructureStateArray = v2i_interface_msgs::msg::InfrastructureStateArray;
   using InParkingStatus = in_parking_msgs::msg::InParkingStatus;
 
-
   // constants
-  enum class CMD_STATE : uint8_t
-  {
-    REQUESTING = 0b01,
-    ERROR = 0b10
-  };
+  enum class CMD_STATE : uint8_t { REQUESTING = 0b01, ERROR = 0b10 };
 
   static constexpr char CMD_TYPE[] = "eva_beacon_system";
 
