@@ -71,7 +71,7 @@ void CargoLoadingService::execCargoLoading(
 
   const auto period = std::chrono::duration_cast<std::chrono::nanoseconds>(
     std::chrono::duration<double>(1.0 / command_pub_hz_));
-  timer_ = create_timer(
+  rclcpp::TimerBase::SharedPtr timer = create_timer(
     this, get_clock(), period,
     [&]() {
       InfrastructureCommand command;
@@ -84,7 +84,7 @@ void CargoLoadingService::execCargoLoading(
         command.state = getCommandState();
       } else {
         response->state = ExecuteInParkingTaskResponse::FAIL;
-        timer_->cancel();
+        timer->cancel();
         return;
       }
       InfrastructureCommandArray command_array;
@@ -98,24 +98,19 @@ void CargoLoadingService::execCargoLoading(
         if (finalizing_pub_limit > finalizing_pub_count) {
           finalizing_pub_count++;
         } else {
-          timer_->cancel();
+          timer->cancel();
         }
       }
     },
     callback_group_subscription_);
 
-  while (!timer_->is_canceled()) {
+  while (!timer->is_canceled()) {
     rclcpp::sleep_for(period);
   }
 
-  InitParam();
-}
-
-void CargoLoadingService::InitParam()
-{
+  // reinitialize
   facility_id_ = "";
   finalize_ = false;
-  timer_ = nullptr;
 }
 
 uint8_t CargoLoadingService::getCommandState()
