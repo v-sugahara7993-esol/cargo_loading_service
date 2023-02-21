@@ -61,18 +61,18 @@ private:
   tier4_api_utils::Service<ExecuteInParkingTask>::SharedPtr srv_cargo_loading_;
 
   // Publisher
-  rclcpp::Publisher<InfrastructureCommandArray>::SharedPtr pub_cargo_loading_state_;
+  rclcpp::Publisher<InfrastructureCommandArray>::SharedPtr pub_commands_;
 
   // Subscriber
   rclcpp::Subscription<InParkingStatus>::SharedPtr sub_inparking_status_;
-  rclcpp::Subscription<InfrastructureStateArray>::SharedPtr sub_cargo_loading_state_;
+  rclcpp::Subscription<InfrastructureStateArray>::SharedPtr sub_infrastructure_status_;
 
   // Callback
   void execCargoLoading(
     const ExecuteInParkingTask::Request::SharedPtr request,
     const ExecuteInParkingTask::Response::SharedPtr response);
-  void onInParkingState(const InParkingStatus::ConstSharedPtr msg_ptr);
-  void onCargoLoadingState(const InfrastructureStateArray::ConstSharedPtr msg_ptr);
+  void onInParkingStatus(const InParkingStatus::ConstSharedPtr msg_ptr);
+  void onInfrastructureStatus(const InfrastructureStateArray::ConstSharedPtr msg_ptr);
 
   // Function
   uint8_t getCommandState();
