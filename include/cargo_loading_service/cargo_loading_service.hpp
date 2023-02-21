@@ -49,7 +49,7 @@ private:
   // variable
   std::string facility_id_;
   rclcpp::TimerBase::SharedPtr timer_;
-  int32_t aw_state_;
+  int32_t aw_state_{InParkingStatus::NONE};
   double command_pub_hz_;
   bool finalize_;
 

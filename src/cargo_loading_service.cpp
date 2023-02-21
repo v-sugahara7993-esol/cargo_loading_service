@@ -21,9 +21,7 @@ namespace cargo_loading_service
 
 CargoLoadingService::CargoLoadingService(
   const rclcpp::NodeOptions & options)
-: Node("cargo_loading_service", options),
-  facility_id_(""),
-  aw_state_(in_parking_msgs::msg::InParkingStatus::NONE)
+: Node("cargo_loading_service", options)
 {
   using std::placeholders::_1;
   using std::placeholders::_2;
