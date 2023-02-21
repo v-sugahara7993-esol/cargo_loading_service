@@ -145,7 +145,7 @@ void CargoLoadingService::onCargoLoadingState(const InfrastructureStateArray::Co
 {
   for (const auto & state : msg->states) {
     if (
-      state.id.compare(facility_id_) == 0 && state.approval &&
+      state.id == facility_id_ && state.approval &&
       aw_state_ != InParkingStatus::AW_EMERGENCY) {
       finalize_ = true;
     }
