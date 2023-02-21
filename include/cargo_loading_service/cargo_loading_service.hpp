@@ -25,6 +25,8 @@
 #include "v2i_interface_msgs/msg/infrastructure_state.hpp"
 #include "v2i_interface_msgs/msg/infrastructure_state_array.hpp"
 
+#include <string>
+
 namespace cargo_loading_service
 {
 
