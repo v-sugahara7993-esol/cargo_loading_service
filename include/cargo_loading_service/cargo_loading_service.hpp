@@ -71,7 +71,6 @@ private:
   void execCargoLoading(
     const ExecuteInParkingTask::Request::SharedPtr request,
     const ExecuteInParkingTask::Response::SharedPtr response);
-  void onTimer();
   void onInParkingState(const InParkingStatus::ConstSharedPtr msg_ptr);
   void onCargoLoadingState(const InfrastructureStateArray::ConstSharedPtr msg_ptr);
 
