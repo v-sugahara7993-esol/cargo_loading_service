@@ -72,7 +72,7 @@ void CargoLoadingService::execCargoLoading(
   using InParkingStatus = in_parking_msgs::msg::InParkingStatus;
   using ExecuteInParkingTaskResponse = in_parking_msgs::srv::ExecuteInParkingTask::Response;
 
-  const int32_t finalizing_pub_limit = static_cast<int32_t>(command_pub_hz_ * 2.0);
+  const auto finalizing_pub_limit = static_cast<int32_t>(command_pub_hz_ * 2.0);
   int32_t finalizing_pub_count = 0;
 
   facility_id_ = request->value;
