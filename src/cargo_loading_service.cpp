@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License
 
+#include "cargo_loading_service/cargo_loading_service.hpp"
+
 #include <chrono>
 #include <memory>
-#include "cargo_loading_service/cargo_loading_service.hpp"
 
 namespace cargo_loading_service
 {
 
-CargoLoadingService::CargoLoadingService(
-  const rclcpp::NodeOptions & options)
+CargoLoadingService::CargoLoadingService(const rclcpp::NodeOptions & options)
 : Node("cargo_loading_service", options)
 {
   using std::placeholders::_1;
@@ -31,34 +31,31 @@ CargoLoadingService::CargoLoadingService(
   command_pub_hz_ = this->declare_parameter("cargo_loadging_command_pub_hz", 5.0);
 
   // Callback group
-  callback_group_service_ = this->create_callback_group(
-    rclcpp::CallbackGroupType::MutuallyExclusive);
-  callback_group_subscription_ = this->create_callback_group(
-    rclcpp::CallbackGroupType::MutuallyExclusive);
+  callback_group_service_ =
+    this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  callback_group_subscription_ =
+    this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
   auto subscribe_option = rclcpp::SubscriptionOptions();
   subscribe_option.callback_group = callback_group_subscription_;
 
   // Service
   srv_cargo_loading_ = proxy.create_service<in_parking_msgs::srv::ExecuteInParkingTask>(
-    "/parking/cargo_loading",
-    std::bind(&CargoLoadingService::execCargoLoading, this, _1, _2),
-      rmw_qos_profile_services_default, callback_group_service_);
+    "/parking/cargo_loading", std::bind(&CargoLoadingService::execCargoLoading, this, _1, _2),
+    rmw_qos_profile_services_default, callback_group_service_);
 
   // Publisher
-  pub_cargo_loading_state_ = this->create_publisher<v2i_interface_msgs::msg::InfrastructureCommandArray>(
-    "/cargo_loading/infrastructure_commands", rclcpp::QoS{3}.transient_local());
+  pub_cargo_loading_state_ =
+    this->create_publisher<v2i_interface_msgs::msg::InfrastructureCommandArray>(
+      "/cargo_loading/infrastructure_commands", rclcpp::QoS{3}.transient_local());
 
   // Subscriber
-  sub_inparking_status_ =
-    this->create_subscription<in_parking_msgs::msg::InParkingStatus>(
+  sub_inparking_status_ = this->create_subscription<in_parking_msgs::msg::InParkingStatus>(
     "/in_parking/state", rclcpp::QoS{1},
-    std::bind(&CargoLoadingService::onInParkingState, this, _1),
-    subscribe_option);
+    std::bind(&CargoLoadingService::onInParkingState, this, _1), subscribe_option);
   sub_cargo_loading_state_ =
     this->create_subscription<v2i_interface_msgs::msg::InfrastructureStateArray>(
-    "/infrastructure_status", rclcpp::QoS{1},
-    std::bind(&CargoLoadingService::onCargoLoadingState, this, _1),
-    subscribe_option);
+      "/infrastructure_status", rclcpp::QoS{1},
+      std::bind(&CargoLoadingService::onCargoLoadingState, this, _1), subscribe_option);
 }
 
 void CargoLoadingService::execCargoLoading(
@@ -117,10 +114,10 @@ void CargoLoadingService::execCargoLoading(
   }
 
   InitParam();
-
 }
 
-void CargoLoadingService::InitParam() {
+void CargoLoadingService::InitParam()
+{
   facility_id_ = "";
   finalize_ = false;
   timer_ = nullptr;
@@ -135,8 +132,9 @@ uint8_t CargoLoadingService::getCommandState()
 
   if (aw_state_ == InParkingStatus::AW_EMERGENCY) {
     command_state = CMD_STATE_ERROR;
-  } else if (aw_state_ == InParkingStatus::AW_OUT_OF_PARKING ||
-             aw_state_ == InParkingStatus::AW_UNAVAILABLE) {
+  } else if (
+    aw_state_ == InParkingStatus::AW_OUT_OF_PARKING ||
+    aw_state_ == InParkingStatus::AW_UNAVAILABLE) {
     command_state = InfrastructureCommand::SEND_ZERO;
     if (!finalize_) {
       finalize_ = true;
@@ -152,8 +150,9 @@ void CargoLoadingService::onInParkingState(
   const in_parking_msgs::msg::InParkingStatus::ConstSharedPtr msg)
 {
   aw_state_ = msg->aw_state;
-  RCLCPP_DEBUG_THROTTLE(this->get_logger(), *this->get_clock(), 0.05,"Subscribed /in_parking/state:%s",
-               rosidl_generator_traits::to_yaml(*msg).c_str());
+  RCLCPP_DEBUG_THROTTLE(
+    this->get_logger(), *this->get_clock(), 0.05, "Subscribed /in_parking/state:%s",
+    rosidl_generator_traits::to_yaml(*msg).c_str());
 }
 
 void CargoLoadingService::onCargoLoadingState(
@@ -162,14 +161,15 @@ void CargoLoadingService::onCargoLoadingState(
   using InParkingStatus = in_parking_msgs::msg::InParkingStatus;
 
   for (const auto & state : msg->states) {
-    if (state.id.compare(facility_id_) == 0 &&
-        state.approval &&
-        aw_state_ != InParkingStatus::AW_EMERGENCY) {
+    if (
+      state.id.compare(facility_id_) == 0 && state.approval &&
+      aw_state_ != InParkingStatus::AW_EMERGENCY) {
       finalize_ = true;
     }
   }
-  RCLCPP_DEBUG_THROTTLE(this->get_logger(), *this->get_clock(), 0.05, "Subscribed /infrastructure_status:%s",
-               rosidl_generator_traits::to_yaml(*msg).c_str());
+  RCLCPP_DEBUG_THROTTLE(
+    this->get_logger(), *this->get_clock(), 0.05, "Subscribed /infrastructure_status:%s",
+    rosidl_generator_traits::to_yaml(*msg).c_str());
 }
 }  // namespace cargo_loading_service
 
