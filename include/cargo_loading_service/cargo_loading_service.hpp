@@ -37,9 +37,11 @@ public:
 
 private:
   using ExecuteInParkingTask = in_parking_msgs::srv::ExecuteInParkingTask;
+  using InfrastructureCommand = v2i_interface_msgs::msg::InfrastructureCommand;
   using InfrastructureCommandArray = v2i_interface_msgs::msg::InfrastructureCommandArray;
-  using InParkingStatus = in_parking_msgs::msg::InParkingStatus;
   using InfrastructureStateArray = v2i_interface_msgs::msg::InfrastructureStateArray;
+  using InParkingStatus = in_parking_msgs::msg::InParkingStatus;
+
 
   // constants
   static constexpr uint8_t CMD_STATE_REQUESTING = 0b01;

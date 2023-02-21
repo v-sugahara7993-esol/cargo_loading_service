@@ -39,32 +39,29 @@ CargoLoadingService::CargoLoadingService(const rclcpp::NodeOptions & options)
   subscribe_option.callback_group = callback_group_subscription_;
 
   // Service
-  srv_cargo_loading_ = proxy.create_service<in_parking_msgs::srv::ExecuteInParkingTask>(
+  srv_cargo_loading_ = proxy.create_service<ExecuteInParkingTask>(
     "/parking/cargo_loading", std::bind(&CargoLoadingService::execCargoLoading, this, _1, _2),
     rmw_qos_profile_services_default, callback_group_service_);
 
   // Publisher
   pub_cargo_loading_state_ =
-    this->create_publisher<v2i_interface_msgs::msg::InfrastructureCommandArray>(
+    this->create_publisher<InfrastructureCommandArray>(
       "/cargo_loading/infrastructure_commands", rclcpp::QoS{3}.transient_local());
 
   // Subscriber
-  sub_inparking_status_ = this->create_subscription<in_parking_msgs::msg::InParkingStatus>(
+  sub_inparking_status_ = this->create_subscription<InParkingStatus>(
     "/in_parking/state", rclcpp::QoS{1},
     std::bind(&CargoLoadingService::onInParkingState, this, _1), subscribe_option);
   sub_cargo_loading_state_ =
-    this->create_subscription<v2i_interface_msgs::msg::InfrastructureStateArray>(
+    this->create_subscription<InfrastructureStateArray>(
       "/infrastructure_status", rclcpp::QoS{1},
       std::bind(&CargoLoadingService::onCargoLoadingState, this, _1), subscribe_option);
 }
 
 void CargoLoadingService::execCargoLoading(
-  const in_parking_msgs::srv::ExecuteInParkingTask::Request::SharedPtr request,
-  const in_parking_msgs::srv::ExecuteInParkingTask::Response::SharedPtr response)
+  const ExecuteInParkingTask::Request::SharedPtr request,
+  const ExecuteInParkingTask::Response::SharedPtr response)
 {
-  using InfrastructureCommand = v2i_interface_msgs::msg::InfrastructureCommand;
-  using InfrastructureCommandArray = v2i_interface_msgs::msg::InfrastructureCommandArray;
-  using InParkingStatus = in_parking_msgs::msg::InParkingStatus;
   using ExecuteInParkingTaskResponse = in_parking_msgs::srv::ExecuteInParkingTask::Response;
 
   const auto finalizing_pub_limit = static_cast<int32_t>(command_pub_hz_ * 2.0);
@@ -125,9 +122,6 @@ void CargoLoadingService::InitParam()
 
 uint8_t CargoLoadingService::getCommandState()
 {
-  using InParkingStatus = in_parking_msgs::msg::InParkingStatus;
-  using InfrastructureCommand = v2i_interface_msgs::msg::InfrastructureCommand;
-
   uint8_t command_state;
 
   if (aw_state_ == InParkingStatus::AW_EMERGENCY) {
@@ -147,7 +141,7 @@ uint8_t CargoLoadingService::getCommandState()
 }
 
 void CargoLoadingService::onInParkingState(
-  const in_parking_msgs::msg::InParkingStatus::ConstSharedPtr msg)
+  const InParkingStatus::ConstSharedPtr msg)
 {
   aw_state_ = msg->aw_state;
   RCLCPP_DEBUG_THROTTLE(
@@ -156,10 +150,8 @@ void CargoLoadingService::onInParkingState(
 }
 
 void CargoLoadingService::onCargoLoadingState(
-  const v2i_interface_msgs::msg::InfrastructureStateArray::ConstSharedPtr msg)
+  const InfrastructureStateArray::ConstSharedPtr msg)
 {
-  using InParkingStatus = in_parking_msgs::msg::InParkingStatus;
-
   for (const auto & state : msg->states) {
     if (
       state.id.compare(facility_id_) == 0 && state.approval &&
