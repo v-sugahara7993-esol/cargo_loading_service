@@ -44,9 +44,13 @@ private:
 
 
   // constants
-  static constexpr uint8_t CMD_STATE_REQUESTING = 0b01;
-  static constexpr uint8_t CMD_STATE_ERROR = 0b10;
-  const std::string CMD_TYPE = "eva_beacon_system";
+  enum class CMD_STATE : uint8_t
+  {
+    REQUESTING = 0b01,
+    ERROR = 0b10
+  };
+
+  static constexpr char CMD_TYPE[] = "eva_beacon_system";
 
   // variable
   std::string facility_id_;

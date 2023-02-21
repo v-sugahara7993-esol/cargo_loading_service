@@ -122,10 +122,10 @@ void CargoLoadingService::InitParam()
 
 uint8_t CargoLoadingService::getCommandState()
 {
-  uint8_t command_state;
+  uint8_t command_state = InfrastructureCommand::SEND_ZERO;
 
   if (aw_state_ == InParkingStatus::AW_EMERGENCY) {
-    command_state = CMD_STATE_ERROR;
+    command_state = static_cast<std::underlying_type<CMD_STATE>::type>(CMD_STATE::ERROR);
   } else if (
     aw_state_ == InParkingStatus::AW_OUT_OF_PARKING ||
     aw_state_ == InParkingStatus::AW_UNAVAILABLE) {
@@ -134,7 +134,7 @@ uint8_t CargoLoadingService::getCommandState()
       finalize_ = true;
     }
   } else {
-    command_state = CMD_STATE_REQUESTING;
+    command_state = static_cast<std::underlying_type<CMD_STATE>::type>(CMD_STATE::REQUESTING);
   }
 
   return command_state;
