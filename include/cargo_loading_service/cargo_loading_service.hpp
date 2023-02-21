@@ -51,7 +51,7 @@ private:
   std::string facility_id_;
   int32_t aw_state_{InParkingStatus::NONE};
   double command_pub_hz_;
-  bool finalize_;
+  bool finalize_{false};
 
   // Callback group
   rclcpp::CallbackGroup::SharedPtr callback_group_service_;
