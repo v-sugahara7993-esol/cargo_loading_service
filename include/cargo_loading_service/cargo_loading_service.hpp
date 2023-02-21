@@ -75,7 +75,6 @@ private:
   void onCargoLoadingState(const InfrastructureStateArray::ConstSharedPtr msg_ptr);
 
   // Function
-  void InitParam();
   uint8_t getCommandState();
 };
 
