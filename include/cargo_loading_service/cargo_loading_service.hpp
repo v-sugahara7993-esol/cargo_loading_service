@@ -77,6 +77,10 @@ private:
   void onInfrastructureStatus(const InfrastructureStateArray::ConstSharedPtr msg_ptr);
   void onTimer();
   void publishCommand(const uint8_t state);
+
+  // Callback Group
+  rclcpp::CallbackGroup::SharedPtr callback_group_subscription_;
+  rclcpp::CallbackGroup::SharedPtr callback_group_service_;
 };
 
 }  // namespace cargo_loading_service

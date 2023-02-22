@@ -32,15 +32,17 @@ CargoLoadingService::CargoLoadingService(const rclcpp::NodeOptions & options)
   post_processing_time_ = this->declare_parameter<double>("post_processing_time", 2.0);
 
   // Callback group
-  const auto callback_group_subscription =
+  callback_group_subscription_ =
     this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
   auto subscribe_option = rclcpp::SubscriptionOptions();
-  subscribe_option.callback_group = callback_group_subscription;
+  subscribe_option.callback_group = callback_group_subscription_;
+  callback_group_service_ =
+    this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
   // Service
   srv_cargo_loading_ = proxy.create_service<ExecuteInParkingTask>(
     "/parking/cargo_loading", std::bind(&CargoLoadingService::execCargoLoading, this, _1, _2),
-    rmw_qos_profile_services_default);
+    rmw_qos_profile_services_default, callback_group_service_);
 
   // Publisher
   pub_commands_ = this->create_publisher<InfrastructureCommandArray>(
@@ -58,7 +60,7 @@ CargoLoadingService::CargoLoadingService(const rclcpp::NodeOptions & options)
   const auto period_ns = rclcpp::Rate(command_pub_hz_).period();
   timer_ = create_timer(
     this, get_clock(), period_ns, std::bind(&CargoLoadingService::onTimer, this),
-    callback_group_subscription);
+    callback_group_subscription_);
 
   // サービスcall時にtimerが回るように、最初にキャンセルしておく
   timer_->cancel();
