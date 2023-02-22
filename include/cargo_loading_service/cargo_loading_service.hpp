@@ -49,7 +49,7 @@ private:
   static constexpr char COMMAND_TYPE[] = "eva_beacon_system";
 
   // variable
-  std::string facility_id_;
+  uint8_t infra_id_;
   int32_t aw_state_{InParkingStatus::NONE};
   bool infra_approval_;
   uint8_t service_result_{ExecuteInParkingTask::Response::NONE};
