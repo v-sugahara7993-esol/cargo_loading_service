@@ -103,7 +103,6 @@ void CargoLoadingService::publishCommand(const uint8_t state)
 
   InfrastructureCommand command;
   command.stamp = stamp;
-  command.type = COMMAND_TYPE;
   command.id = facility_id_;
   command.state = state;
 
