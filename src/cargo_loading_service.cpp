@@ -174,8 +174,9 @@ void CargoLoadingService::onInfrastructureStatus(const InfrastructureStateArray:
   const auto itr = std::find_if(msg->states.begin(), msg->states.end(), [this](const auto & e) {
     return e.id == facility_id_;
   });
-
-  infra_approval_ = msg->states.at(std::distance(msg->states.begin(), itr)).approval;
+  if (itr != msg->states.end()) {
+    infra_approval_ = msg->states.at(std::distance(msg->states.begin(), itr)).approval;
+  }
 
   RCLCPP_DEBUG_THROTTLE(
     this->get_logger(), *this->get_clock(), 1000 /* ms */, "InfrastructureStatus: %s",
