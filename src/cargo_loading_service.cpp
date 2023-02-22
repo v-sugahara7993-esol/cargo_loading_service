@@ -136,7 +136,8 @@ void CargoLoadingService::onTimer()
         timer_->cancel();
         break;
       // AWが停留所にいる場合、設備連携要求を発出
-      case InParkingStatus::AW_STILL_IN_PARKING:
+      case InParkingStatus::AW_WAITING_FOR_ROUTE:
+      case InParkingStatus::AW_WAITING_FOR_ENGAGE:
       case InParkingStatus::AW_ARRIVED_PARKING:
         RCLCPP_INFO(this->get_logger(), "requesting");
         publishCommand(
