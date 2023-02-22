@@ -91,7 +91,7 @@ void CargoLoadingService::execCargoLoading(
 
   // 各変数の初期化
   service_result_ = ExecuteInParkingTask::Response::NONE;
-  facility_id_ = "";
+  infra_id_ = InfrastructureState::INVALID_ID;
   infra_approval_ = false;
 }
 
