@@ -73,13 +73,6 @@ void CargoLoadingService::execCargoLoading(
   // 設備ID取得
   facility_id_ = request->value;
 
-  // aw_stateのsubscribe確認、NONEならばreject
-  if (aw_state_ == InParkingStatus::NONE) {
-    RCLCPP_WARN(this->get_logger(), "aw_state is NONE, reject...");
-    response->state = ExecuteInParkingTask::Response::FAIL;
-    return;
-  }
-
   // 設備連携要求開始
   if (timer_->is_canceled()) {
     timer_->reset();
@@ -120,6 +113,15 @@ void CargoLoadingService::publishCommand(const uint8_t state)
 void CargoLoadingService::onTimer()
 {
   RCLCPP_INFO(this->get_logger(), "timer start");
+
+// aw_stateのsubscribe確認、NONEならばreject
+  if (aw_state_ == InParkingStatus::NONE) {
+    RCLCPP_WARN(this->get_logger(), "aw_state is NONE, reject...");
+    service_result_ = ExecuteInParkingTask::Response::FAIL;
+    timer_->cancel();
+    return;
+  }
+
   // 設備連携が完了していない
   if (!infra_approval_) {
     // aw_stateで条件分岐
