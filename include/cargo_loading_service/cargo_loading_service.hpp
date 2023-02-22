@@ -46,7 +46,6 @@ private:
   // constants
   enum class CommandState : uint8_t { REQUESTING = 0b01, ERROR = 0b10 };
 
-  static constexpr char COMMAND_TYPE[] = "eva_beacon_system";
 
   // variable
   uint8_t infra_id_;
