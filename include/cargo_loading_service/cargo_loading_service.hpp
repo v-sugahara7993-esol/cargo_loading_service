@@ -39,23 +39,22 @@ private:
   using ExecuteInParkingTask = in_parking_msgs::srv::ExecuteInParkingTask;
   using InfrastructureCommand = v2i_interface_msgs::msg::InfrastructureCommand;
   using InfrastructureCommandArray = v2i_interface_msgs::msg::InfrastructureCommandArray;
+  using InfrastructureState = v2i_interface_msgs::msg::InfrastructureState;
   using InfrastructureStateArray = v2i_interface_msgs::msg::InfrastructureStateArray;
   using InParkingStatus = in_parking_msgs::msg::InParkingStatus;
 
   // constants
-  enum class CMD_STATE : uint8_t { REQUESTING = 0b01, ERROR = 0b10 };
+  enum class CommandState : uint8_t { REQUESTING = 0b01, ERROR = 0b10 };
 
-  static constexpr char CMD_TYPE[] = "eva_beacon_system";
+  static constexpr char COMMAND_TYPE[] = "eva_beacon_system";
 
   // variable
   std::string facility_id_;
   int32_t aw_state_{InParkingStatus::NONE};
+  bool infra_approval_;
+  uint8_t service_result_{ExecuteInParkingTask::Response::NONE};
   double command_pub_hz_;
-  bool finalize_{false};
-
-  // Callback group
-  rclcpp::CallbackGroup::SharedPtr callback_group_service_;
-  rclcpp::CallbackGroup::SharedPtr callback_group_subscription_;
+  double post_processing_time_;
 
   // Service
   tier4_api_utils::Service<ExecuteInParkingTask>::SharedPtr srv_cargo_loading_;
@@ -67,15 +66,17 @@ private:
   rclcpp::Subscription<InParkingStatus>::SharedPtr sub_inparking_status_;
   rclcpp::Subscription<InfrastructureStateArray>::SharedPtr sub_infrastructure_status_;
 
+  // Timer
+  rclcpp::TimerBase::SharedPtr timer_;
+
   // Callback
   void execCargoLoading(
     const ExecuteInParkingTask::Request::SharedPtr request,
     const ExecuteInParkingTask::Response::SharedPtr response);
   void onInParkingStatus(const InParkingStatus::ConstSharedPtr msg_ptr);
   void onInfrastructureStatus(const InfrastructureStateArray::ConstSharedPtr msg_ptr);
-
-  // Function
-  uint8_t getCommandState();
+  void onTimer();
+  void publishCommand(const uint8_t state);
 };
 
 }  // namespace cargo_loading_service

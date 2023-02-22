@@ -28,130 +28,157 @@ CargoLoadingService::CargoLoadingService(const rclcpp::NodeOptions & options)
   tier4_api_utils::ServiceProxyNodeInterface proxy(this);
 
   // Parameter
-  command_pub_hz_ = this->declare_parameter("cargo_loadging_command_pub_hz", 5.0);
+  command_pub_hz_ = this->declare_parameter<double>("command_pub_hz", 5.0);
+  post_processing_time_ = this->declare_parameter<double>("post_processing_time", 2.0);
 
   // Callback group
-  callback_group_service_ =
-    this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-  callback_group_subscription_ =
+  const auto callback_group_subscription =
     this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
   auto subscribe_option = rclcpp::SubscriptionOptions();
-  subscribe_option.callback_group = callback_group_subscription_;
+  subscribe_option.callback_group = callback_group_subscription;
 
   // Service
   srv_cargo_loading_ = proxy.create_service<ExecuteInParkingTask>(
     "/parking/cargo_loading", std::bind(&CargoLoadingService::execCargoLoading, this, _1, _2),
-    rmw_qos_profile_services_default, callback_group_service_);
+    rmw_qos_profile_services_default);
 
   // Publisher
   pub_commands_ = this->create_publisher<InfrastructureCommandArray>(
-    "/cargo_loading/infrastructure_commands", rclcpp::QoS{3}.transient_local());
+    "/cargo_loading/infrastructure_commands", 10);
 
   // Subscriber
   sub_inparking_status_ = this->create_subscription<InParkingStatus>(
-    "/in_parking/status", rclcpp::QoS{1},
+    "/in_parking/state", rclcpp::QoS{1},
     std::bind(&CargoLoadingService::onInParkingStatus, this, _1), subscribe_option);
   sub_infrastructure_status_ = this->create_subscription<InfrastructureStateArray>(
     "/infrastructure_status", rclcpp::QoS{1},
     std::bind(&CargoLoadingService::onInfrastructureStatus, this, _1), subscribe_option);
+
+  // timer
+  const auto period_ns = rclcpp::Rate(command_pub_hz_).period();
+  timer_ = create_timer(
+    this, get_clock(), period_ns, std::bind(&CargoLoadingService::onTimer, this),
+    callback_group_subscription);
+
+  // サービスcall時にtimerが回るように、最初にキャンセルしておく
+  timer_->cancel();
 }
 
 void CargoLoadingService::execCargoLoading(
   const ExecuteInParkingTask::Request::SharedPtr request,
   const ExecuteInParkingTask::Response::SharedPtr response)
 {
-  using ExecuteInParkingTaskResponse = in_parking_msgs::srv::ExecuteInParkingTask::Response;
-
-  const auto finalizing_pub_limit = static_cast<int32_t>(command_pub_hz_ * 2.0);
-  int32_t finalizing_pub_count = 0;
-
+  // 設備ID取得
   facility_id_ = request->value;
 
-  response->state = ExecuteInParkingTaskResponse::SUCCESS;
-
-  const auto period = std::chrono::duration_cast<std::chrono::nanoseconds>(
-    std::chrono::duration<double>(1.0 / command_pub_hz_));
-  rclcpp::TimerBase::SharedPtr timer = create_timer(
-    this, get_clock(), period,
-    [&]() {
-      InfrastructureCommand command;
-      command.type = CMD_TYPE;
-      command.id = request->value;
-
-      if (finalize_) {
-        command.state = InfrastructureCommand::SEND_ZERO;
-      } else if (aw_state_ != InParkingStatus::NONE) {
-        command.state = getCommandState();
-      } else {
-        response->state = ExecuteInParkingTaskResponse::FAIL;
-        timer->cancel();
-        return;
-      }
-      InfrastructureCommandArray command_array;
-      auto stamp = this->get_clock()->now();
-      command.stamp = stamp;
-      command_array.commands.push_back(command);
-      command_array.stamp = stamp;
-      pub_commands_->publish(command_array);
-
-      if (finalize_) {
-        if (finalizing_pub_limit > finalizing_pub_count) {
-          finalizing_pub_count++;
-        } else {
-          timer->cancel();
-        }
-      }
-    },
-    callback_group_subscription_);
-
-  while (!timer->is_canceled()) {
-    rclcpp::sleep_for(period);
+  // aw_stateのsubscribe確認、NONEならばreject
+  if (aw_state_ == InParkingStatus::NONE) {
+    RCLCPP_WARN(this->get_logger(), "aw_state is NONE, reject...");
+    response->state = ExecuteInParkingTask::Response::FAIL;
+    return;
   }
 
-  // reinitialize
+  // 設備連携要求開始
+  if (timer_->is_canceled()) {
+    timer_->reset();
+    RCLCPP_INFO(this->get_logger(), "Timer restart");
+  }
+
+  // キャンセルになるまで設備連携要求を投げ続ける
+  while (!timer_->is_canceled()) {
+    RCLCPP_INFO_THROTTLE(
+      this->get_logger(), *this->get_clock(), 1000 /* ms */, "request is running");
+  }
+
+  // サービスのresult更新
+  response->state = service_result_;
+
+  // 各変数の初期化
+  service_result_ = ExecuteInParkingTask::Response::NONE;
   facility_id_ = "";
-  finalize_ = false;
+  infra_approval_ = false;
 }
 
-uint8_t CargoLoadingService::getCommandState()
+void CargoLoadingService::publishCommand(const uint8_t state)
 {
-  uint8_t command_state = InfrastructureCommand::SEND_ZERO;
+  InfrastructureCommandArray command_array;
+  auto stamp = this->get_clock()->now();
+  command_array.stamp = stamp;
 
-  if (aw_state_ == InParkingStatus::AW_EMERGENCY) {
-    command_state = static_cast<std::underlying_type<CMD_STATE>::type>(CMD_STATE::ERROR);
-  } else if (
-    aw_state_ == InParkingStatus::AW_OUT_OF_PARKING ||
-    aw_state_ == InParkingStatus::AW_UNAVAILABLE) {
-    command_state = InfrastructureCommand::SEND_ZERO;
-    if (!finalize_) {
-      finalize_ = true;
+  InfrastructureCommand command;
+  command.stamp = stamp;
+  command.type = COMMAND_TYPE;
+  command.id = facility_id_;
+  command.state = state;
+
+  command_array.commands.push_back(command);
+  pub_commands_->publish(command_array);
+}
+
+void CargoLoadingService::onTimer()
+{
+  RCLCPP_INFO(this->get_logger(), "timer start");
+  // 設備連携が完了していない
+  if (!infra_approval_) {
+    // aw_stateで条件分岐
+    switch (aw_state_) {
+      // AWがEmergencyの場合はERRORを発出し続ける
+      case InParkingStatus::AW_EMERGENCY:
+        publishCommand(static_cast<std::underlying_type<CommandState>::type>(CommandState::ERROR));
+        RCLCPP_ERROR(this->get_logger(), "AW emergency");
+        break;
+      // AWが停留所外などではSEND_ZEROを発出し、設備連携結果はFAILで返す
+      case InParkingStatus::AW_OUT_OF_PARKING:
+      case InParkingStatus::AW_UNAVAILABLE:
+        RCLCPP_WARN(this->get_logger(), "AW warning");
+        publishCommand(InfrastructureCommand::SEND_ZERO);
+        service_result_ = ExecuteInParkingTask::Response::FAIL;
+        timer_->cancel();
+        break;
+      // AWが停留所にいる場合、設備連携要求を発出
+      case InParkingStatus::AW_STILL_IN_PARKING:
+      case InParkingStatus::AW_ARRIVED_PARKING:
+        RCLCPP_INFO(this->get_logger(), "requesting");
+        publishCommand(
+          static_cast<std::underlying_type<CommandState>::type>(CommandState::REQUESTING));
+        break;
+      default:
+        break;
     }
-  } else {
-    command_state = static_cast<std::underlying_type<CMD_STATE>::type>(CMD_STATE::REQUESTING);
+  } else {  // 設備連携が完了
+    RCLCPP_INFO(this->get_logger(), "finished");
+    // SEND_ZEROをn秒間発出し、設備連携結果はSUCCESSで返し、timerをキャンセル
+    const auto start_time = this->now();
+    while (true) {
+      publishCommand(InfrastructureCommand::SEND_ZERO);
+      const auto time_diff = this->now() - start_time;
+      if (time_diff.seconds() > post_processing_time_) break;
+      rclcpp::sleep_for(rclcpp::Rate(command_pub_hz_).period());
+    }
+    service_result_ = ExecuteInParkingTask::Response::SUCCESS;
+    timer_->cancel();
   }
-
-  return command_state;
 }
 
 void CargoLoadingService::onInParkingStatus(const InParkingStatus::ConstSharedPtr msg)
 {
   aw_state_ = msg->aw_state;
+
   RCLCPP_DEBUG_THROTTLE(
-    this->get_logger(), *this->get_clock(), 0.05, "Subscribed /in_parking/state:%s",
+    this->get_logger(), *this->get_clock(), 1000 /* ms */, "inParkingStatus: %s",
     rosidl_generator_traits::to_yaml(*msg).c_str());
 }
 
 void CargoLoadingService::onInfrastructureStatus(const InfrastructureStateArray::ConstSharedPtr msg)
 {
-  for (const auto & state : msg->states) {
-    if (
-      state.id == facility_id_ && state.approval &&
-      aw_state_ != InParkingStatus::AW_EMERGENCY) {
-      finalize_ = true;
-    }
-  }
+  const auto itr = std::find_if(msg->states.begin(), msg->states.end(), [this](const auto & e) {
+    return e.id == facility_id_;
+  });
+
+  infra_approval_ = msg->states.at(std::distance(msg->states.begin(), itr)).approval;
+
   RCLCPP_DEBUG_THROTTLE(
-    this->get_logger(), *this->get_clock(), 0.05, "Subscribed /infrastructure_status:%s",
+    this->get_logger(), *this->get_clock(), 1000 /* ms */, "InfrastructureStatus: %s",
     rosidl_generator_traits::to_yaml(*msg).c_str());
 }
 }  // namespace cargo_loading_service
