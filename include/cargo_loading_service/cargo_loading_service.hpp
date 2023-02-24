@@ -16,14 +16,16 @@
 #define CARGO_LOADING_SERVICE__CARGO_LOADING_SERVICE_HPP_
 
 #include "rclcpp/rclcpp.hpp"
-
 #include "tier4_api_utils/tier4_api_utils.hpp"
-#include "in_parking_msgs/srv/execute_in_parking_task.hpp"
+
 #include "in_parking_msgs/msg/in_parking_status.hpp"
+#include "in_parking_msgs/srv/execute_in_parking_task.hpp"
 #include "v2i_interface_msgs/msg/infrastructure_command.hpp"
 #include "v2i_interface_msgs/msg/infrastructure_command_array.hpp"
 #include "v2i_interface_msgs/msg/infrastructure_state.hpp"
 #include "v2i_interface_msgs/msg/infrastructure_state_array.hpp"
+
+#include <string>
 
 namespace cargo_loading_service
 {
@@ -35,43 +37,49 @@ public:
 
 private:
   using ExecuteInParkingTask = in_parking_msgs::srv::ExecuteInParkingTask;
+  using InfrastructureCommand = v2i_interface_msgs::msg::InfrastructureCommand;
   using InfrastructureCommandArray = v2i_interface_msgs::msg::InfrastructureCommandArray;
-  using InParkingStatus = in_parking_msgs::msg::InParkingStatus;
+  using InfrastructureState = v2i_interface_msgs::msg::InfrastructureState;
   using InfrastructureStateArray = v2i_interface_msgs::msg::InfrastructureStateArray;
+  using InParkingStatus = in_parking_msgs::msg::InParkingStatus;
 
-  static constexpr uint8_t REQUESTING = 1;
-  static constexpr uint8_t ERROR = 2;
+  // constants
+  enum class CommandState : uint8_t { REQUESTING = 0b01, ERROR = 0b10 };
 
-  std::mutex mutex_cargo_loading_state_;
-  std::mutex mutex_parking_state_;
-  struct FacilityInfo {
-    std::string id;
-    bool approval;
-  } facility_info_;
-  int32_t aw_state_;
-  std::chrono::nanoseconds command_pub_sleep_time_;
-  double cargo_loading_command_pub_hz_;
 
-  // Callback group
-  rclcpp::CallbackGroup::SharedPtr callback_group_service_;
-  rclcpp::CallbackGroup::SharedPtr callback_group_subscription_;
+  // variable
+  uint8_t infra_id_;
+  int32_t aw_state_{InParkingStatus::NONE};
+  bool infra_approval_;
+  uint8_t service_result_{ExecuteInParkingTask::Response::NONE};
+  double command_pub_hz_;
+  double post_processing_time_;
 
   // Service
   tier4_api_utils::Service<ExecuteInParkingTask>::SharedPtr srv_cargo_loading_;
 
   // Publisher
-  rclcpp::Publisher<InfrastructureCommandArray>::SharedPtr pub_cargo_loading_state_;
+  rclcpp::Publisher<InfrastructureCommandArray>::SharedPtr pub_commands_;
 
   // Subscriber
-  rclcpp::Subscription<InParkingStatus>::SharedPtr sub_parking_state_;
-  rclcpp::Subscription<InfrastructureStateArray>::SharedPtr sub_cargo_loading_state_;
+  rclcpp::Subscription<InParkingStatus>::SharedPtr sub_inparking_status_;
+  rclcpp::Subscription<InfrastructureStateArray>::SharedPtr sub_infrastructure_status_;
+
+  // Timer
+  rclcpp::TimerBase::SharedPtr timer_;
 
   // Callback
   void execCargoLoading(
     const ExecuteInParkingTask::Request::SharedPtr request,
     const ExecuteInParkingTask::Response::SharedPtr response);
-  void onParkingState(const InParkingStatus::ConstSharedPtr msg_ptr);
-  void onCargoLoadingState(const InfrastructureStateArray::ConstSharedPtr msg_ptr);
+  void onInParkingStatus(const InParkingStatus::ConstSharedPtr msg_ptr);
+  void onInfrastructureStatus(const InfrastructureStateArray::ConstSharedPtr msg_ptr);
+  void onTimer();
+  void publishCommand(const uint8_t state);
+
+  // Callback Group
+  rclcpp::CallbackGroup::SharedPtr callback_group_subscription_;
+  rclcpp::CallbackGroup::SharedPtr callback_group_service_;
 };
 
 }  // namespace cargo_loading_service
