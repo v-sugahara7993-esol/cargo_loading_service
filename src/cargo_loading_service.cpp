@@ -181,7 +181,7 @@ void CargoLoadingService::onInfrastructureStatus(const InfrastructureStateArray:
     return e.id == facility_id_;
   });
   if (itr != msg->states.end()) {
-    infra_approval_ = msg->states.at(std::distance(msg->states.begin(), itr)).approval;
+    infra_approval_ = (msg->states.at(std::distance(msg->states.begin(), itr)).status == CommandState::ERROR);
   }
 
   RCLCPP_DEBUG_THROTTLE(
