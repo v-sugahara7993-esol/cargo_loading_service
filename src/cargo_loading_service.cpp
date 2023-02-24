@@ -177,7 +177,7 @@ void CargoLoadingService::onInParkingStatus(const InParkingStatus::ConstSharedPt
 void CargoLoadingService::onInfrastructureStatus(const InfrastructureStateArray::ConstSharedPtr msg)
 {
   const auto itr = std::find_if(msg->states.begin(), msg->states.end(), [this](const auto & e) {
-    return e.id == facility_id_;
+    return e.id == infra_id_;
   });
   if (itr != msg->states.end()) {
     infra_approval_ = (msg->states.at(std::distance(msg->states.begin(), itr)).status == CommandState::ERROR);
