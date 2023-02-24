@@ -93,7 +93,6 @@ void CargoLoadingService::execCargoLoading(
   // 各変数の初期化
   service_result_ = ExecuteInParkingTask::Response::NONE;
   infra_id_ = InfrastructureState::INVALID_ID;
-  infra_approval_ = false;
 }
 
 void CargoLoadingService::publishCommand(const uint8_t state)
