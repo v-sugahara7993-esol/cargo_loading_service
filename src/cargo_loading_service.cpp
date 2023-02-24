@@ -180,7 +180,7 @@ void CargoLoadingService::onInfrastructureStatus(const InfrastructureStateArray:
     return e.id == infra_id_;
   });
   if (itr != msg->states.end()) {
-    infra_approval_ = (msg->states.at(std::distance(msg->states.begin(), itr)).status == CommandState::ERROR);
+    infra_approval_ = (msg->states.at(std::distance(msg->states.begin(), itr)).state == static_cast<uint8_t>(CommandState::ERROR));
   }
 
   RCLCPP_DEBUG_THROTTLE(
