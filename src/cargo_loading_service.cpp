@@ -135,6 +135,7 @@ void CargoLoadingService::onTimer()
       // AWが停留所外などではSEND_ZEROを発出し、設備連携結果はFAILで返す
       case InParkingStatus::AW_OUT_OF_PARKING:
       case InParkingStatus::AW_UNAVAILABLE:
+      case InParkingStatus::NONE:
         RCLCPP_WARN(this->get_logger(), "AW warning");
         infra_approval_ = true;
         service_result_ = ExecuteInParkingTask::Response::FAIL;
