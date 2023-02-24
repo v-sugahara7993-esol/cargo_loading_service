@@ -136,9 +136,8 @@ void CargoLoadingService::onTimer()
       case InParkingStatus::AW_OUT_OF_PARKING:
       case InParkingStatus::AW_UNAVAILABLE:
         RCLCPP_WARN(this->get_logger(), "AW warning");
-        publishCommand(InfrastructureCommand::SEND_ZERO);
+        infra_approval_ = true;
         service_result_ = ExecuteInParkingTask::Response::FAIL;
-        timer_->cancel();
         break;
       // AWが停留所にいる場合、設備連携要求を発出
       case InParkingStatus::AW_WAITING_FOR_ROUTE:
