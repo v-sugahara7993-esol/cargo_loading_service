@@ -160,7 +160,7 @@ void CargoLoadingService::onTimer()
       if (time_diff.seconds() > post_processing_time_) break;
       rclcpp::sleep_for(rclcpp::Rate(command_pub_hz_).period());
     }
-    service_result_ = ExecuteInParkingTask::Response::SUCCESS;
+    infra_approval_ = false;
     timer_->cancel();
   }
 }
