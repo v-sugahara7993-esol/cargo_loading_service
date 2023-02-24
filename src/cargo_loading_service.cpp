@@ -71,7 +71,7 @@ void CargoLoadingService::execCargoLoading(
   const ExecuteInParkingTask::Response::SharedPtr response)
 {
   // 設備ID取得
-  infra_id_ = request->value;
+  infra_id_ = request->id;
   service_result_ = ExecuteInParkingTask::Response::SUCCESS;
 
   // 設備連携要求開始
