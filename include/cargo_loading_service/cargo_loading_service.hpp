@@ -46,11 +46,11 @@ private:
   // constants
   enum class CommandState : uint8_t { REQUESTING = 0b01, ERROR = 0b10 };
 
-
   // variable
   uint8_t infra_id_;
   int32_t aw_state_{InParkingStatus::NONE};
-  bool infra_approval_;
+  int32_t vehicle_operation_mode_{InParkingStatus::VEHICLE_MANUAL};
+  bool infra_approval_{false};
   uint8_t service_result_{ExecuteInParkingTask::Response::NONE};
   double command_pub_hz_;
   double post_processing_time_;
