@@ -26,6 +26,7 @@
 #include "v2i_interface_msgs/msg/infrastructure_state_array.hpp"
 
 #include <string>
+#include <chrono>
 
 namespace cargo_loading_service
 {
@@ -45,6 +46,7 @@ private:
 
   // constants
   enum class CommandState : uint8_t { REQUESTING = 0b01, ERROR = 0b10 };
+  static constexpr std::chrono::nanoseconds timeout_time_{200 * 1000 * 1000};
 
   // variable
   uint8_t infra_id_;
@@ -54,6 +56,8 @@ private:
   uint8_t service_result_{ExecuteInParkingTask::Response::NONE};
   double command_pub_hz_;
   double post_processing_time_;
+  bool aw_state_timeout_{false};
+  rclcpp::Time aw_state_last_receive_time_{rclcpp::Time(0)};
 
   // Service
   tier4_api_utils::Service<ExecuteInParkingTask>::SharedPtr srv_cargo_loading_;

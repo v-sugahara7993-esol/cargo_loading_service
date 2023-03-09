@@ -114,8 +114,19 @@ void CargoLoadingService::onTimer()
 {
   // 設備連携が完了していない
   if (!infra_approval_) {
+    int32_t aw_state;
+    auto receive_time_diff = get_clock()->now() - aw_state_last_receive_time_;
+    if (aw_state_timeout_) {
+      aw_state = InParkingStatus::AW_EMERGENCY;
+    } else if (receive_time_diff.nanoseconds() > rclcpp::Duration(timeout_time_).nanoseconds()) {
+      aw_state = InParkingStatus::AW_EMERGENCY;
+      aw_state_timeout_ = true;
+      RCLCPP_ERROR(this->get_logger(), "/in_parking/state timeout detected.");
+    } else {
+      aw_state = aw_state_;
+    }
     // aw_stateで条件分岐
-    switch (aw_state_) {
+    switch (aw_state) {
       // AWがEmergencyの場合はERRORを発出し続ける
       case InParkingStatus::AW_EMERGENCY:
         publishCommand(static_cast<std::underlying_type<CommandState>::type>(CommandState::ERROR));
@@ -165,6 +176,7 @@ void CargoLoadingService::onTimer()
 
 void CargoLoadingService::onInParkingStatus(const InParkingStatus::ConstSharedPtr msg)
 {
+  aw_state_last_receive_time_ = msg->stamp;
   aw_state_ = msg->aw_state;
   vehicle_operation_mode_ = msg->vehicle_operation_mode;
 
