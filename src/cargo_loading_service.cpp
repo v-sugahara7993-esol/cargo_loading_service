@@ -74,17 +74,23 @@ void CargoLoadingService::execCargoLoading(
   infra_id_ = request->id;
   service_result_ = ExecuteInParkingTask::Response::SUCCESS;
 
-  // 設備連携要求開始
-  if (timer_->is_canceled()) {
-    timer_->reset();
-    RCLCPP_DEBUG(this->get_logger(), "Timer restart");
-  }
+  if (infra_id_ >= static_cast<std::underlying_type<InfraIdLimit>::type>(InfraIdLimit::MIN) &&
+      infra_id_ <= static_cast<std::underlying_type<InfraIdLimit>::type>(InfraIdLimit::MAX)) {
+    // 設備連携要求開始
+    if (timer_->is_canceled()) {
+      timer_->reset();
+      RCLCPP_DEBUG(this->get_logger(), "Timer restart");
+    }
 
-  // キャンセルになるまで設備連携要求を投げ続ける
-  while (!timer_->is_canceled()) {
-    rclcpp::sleep_for(rclcpp::Rate(command_pub_hz_).period());
-    RCLCPP_INFO_THROTTLE(
-      this->get_logger(), *this->get_clock(), 1000 /* ms */, "request is running");
+    // キャンセルになるまで設備連携要求を投げ続ける
+    while (!timer_->is_canceled()) {
+      rclcpp::sleep_for(rclcpp::Rate(command_pub_hz_).period());
+      RCLCPP_INFO_THROTTLE(
+        this->get_logger(), *this->get_clock(), 1000 /* ms */, "request is running");
+    }
+  } else {
+    RCLCPP_WARN(this->get_logger(), "Invalid ID = %d", infra_id_);
+    service_result_ = ExecuteInParkingTask::Response::FAIL;
   }
 
   // サービスのresult更新
