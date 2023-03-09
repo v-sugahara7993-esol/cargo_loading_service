@@ -119,7 +119,8 @@ void CargoLoadingService::onTimer()
       // AWがEmergencyの場合はERRORを発出し続ける
       case InParkingStatus::AW_EMERGENCY:
         publishCommand(static_cast<std::underlying_type<CommandState>::type>(CommandState::ERROR));
-        RCLCPP_ERROR(this->get_logger(), "AW emergency");
+        RCLCPP_ERROR_THROTTLE(
+          this->get_logger(), *this->get_clock(), 1000 /* ms */, "AW emergency");
         break;
       // AWが停留所外などではinfra_approvalをtrueにし、設備連携結果はFAILで返す
       case InParkingStatus::AW_OUT_OF_PARKING:
@@ -148,7 +149,7 @@ void CargoLoadingService::onTimer()
         break;
     }
   } else {  // 設備連携が完了
-    RCLCPP_DEBUG(this->get_logger(), "finished");
+    RCLCPP_INFO(this->get_logger(), "finishing");
     // SEND_ZEROをn秒間発出し、設備連携結果はSUCCESSで返し、timerをキャンセル
     const auto start_time = this->now();
     while (true) {
@@ -157,6 +158,7 @@ void CargoLoadingService::onTimer()
       if (time_diff.seconds() > post_processing_time_) break;
       rclcpp::sleep_for(rclcpp::Rate(command_pub_hz_).period());
     }
+    RCLCPP_INFO(this->get_logger(), "finished");
     infra_approval_ = false;
     infra_id_ = InfrastructureState::INVALID_ID;
     timer_->cancel();
