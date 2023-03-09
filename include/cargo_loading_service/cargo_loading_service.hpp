@@ -45,6 +45,7 @@ private:
 
   // constants
   enum class CommandState : uint8_t { REQUESTING = 0b01, ERROR = 0b10 };
+  static constexpr uint8_t APPROVAL_VALUE = 0b01;
 
   // variable
   uint8_t infra_id_;
