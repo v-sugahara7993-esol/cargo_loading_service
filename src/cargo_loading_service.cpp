@@ -80,13 +80,11 @@ void CargoLoadingService::execCargoLoading(
   infra_id_ = request->id;
   service_result_ = ExecuteInParkingTask::Response::SUCCESS;
 
-  if (infra_id_ >= static_cast<std::underlying_type<InfraIdLimit>::type>(InfraIdLimit::MIN) &&
-      infra_id_ <= static_cast<std::underlying_type<InfraIdLimit>::type>(InfraIdLimit::MAX)) {
-    // 設備連携要求開始
-    if (timer_->is_canceled()) {
+  // 設備連携要求開始
+  if (timer_->is_canceled()) {
       timer_->reset();
-      RCLCPP_DEBUG(this->get_logger(), "Timer restart");
-    }
+    RCLCPP_DEBUG(this->get_logger(), "Timer restart");
+  }
 
     // キャンセルになるまで設備連携要求を投げ続ける
     while (!timer_->is_canceled()) {
