@@ -71,6 +71,12 @@ void CargoLoadingService::execCargoLoading(
   const ExecuteInParkingTask::Response::SharedPtr response)
 {
   // 設備ID取得
+  if (request->id < static_cast<uint8_t>(InfraIdLimit::MIN) ||
+      request->id > static_cast<uint8_t>(InfraIdLimit::MAX)) {
+      RCLCPP_WARN(this->get_logger(), "Invalid ID = %d", request->id);
+      response->state = ExecuteInParkingTask::Response::FAIL;
+      return;
+  }
   infra_id_ = request->id;
   service_result_ = ExecuteInParkingTask::Response::SUCCESS;
 
