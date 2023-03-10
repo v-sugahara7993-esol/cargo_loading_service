@@ -86,15 +86,11 @@ void CargoLoadingService::execCargoLoading(
     RCLCPP_DEBUG(this->get_logger(), "Timer restart");
   }
 
-    // キャンセルになるまで設備連携要求を投げ続ける
-    while (!timer_->is_canceled()) {
-      rclcpp::sleep_for(rclcpp::Rate(command_pub_hz_).period());
-      RCLCPP_INFO_THROTTLE(
-        this->get_logger(), *this->get_clock(), 1000 /* ms */, "request is running");
-    }
-  } else {
-    RCLCPP_WARN(this->get_logger(), "Invalid ID = %d", infra_id_);
-    service_result_ = ExecuteInParkingTask::Response::FAIL;
+  // キャンセルになるまで設備連携要求を投げ続ける
+  while (!timer_->is_canceled()) {
+    rclcpp::sleep_for(rclcpp::Rate(command_pub_hz_).period());
+    RCLCPP_INFO_THROTTLE(
+      this->get_logger(), *this->get_clock(), 1000 /* ms */, "request is running");
   }
 
   // サービスのresult更新
