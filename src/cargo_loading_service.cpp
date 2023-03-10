@@ -181,7 +181,7 @@ void CargoLoadingService::onInfrastructureStatus(const InfrastructureStateArray:
     const auto & e = msg->states.at(std::distance(msg->states.begin(), itr));
 
     // 成功した場合、0b01が返ってくる
-    infra_approval_ = (e.state == APPROVAL_VALUE);
+    infra_approval_ = (e.state == static_cast<uint8_t>(ReceiveState::APPROVAL));
 
     // 0b01じゃない場合、エラー出力
     if (e.state != APPROVAL_VALUE) {
