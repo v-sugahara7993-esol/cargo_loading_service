@@ -158,7 +158,7 @@ void CargoLoadingService::onTimer()
       if (time_diff.seconds() > post_processing_time_) break;
       rclcpp::sleep_for(rclcpp::Rate(command_pub_hz_).period());
     }
-    RCLCPP_INFO(this->get_logger(), "finished");
+    RCLCPP_INFO(this->get_logger(), "complete reporting to infrastructure that the cargo loading process is over.");
     infra_approval_ = false;
     infra_id_ = InfrastructureState::INVALID_ID;
     timer_->cancel();
