@@ -126,7 +126,7 @@ void CargoLoadingService::onTimer()
       case InParkingStatus::AW_OUT_OF_PARKING:
       case InParkingStatus::AW_UNAVAILABLE:
       case InParkingStatus::NONE:
-        RCLCPP_WARN(this->get_logger(), "AW_OUT_OF_PARKING or AW_UNAVAILABLE or NONE");
+        RCLCPP_INFO(this->get_logger(), "AW_OUT_OF_PARKING or AW_UNAVAILABLE or NONE");
         infra_approval_ = true;
         service_result_ = ExecuteInParkingTask::Response::FAIL;
         break;
@@ -140,7 +140,7 @@ void CargoLoadingService::onTimer()
           publishCommand(
           static_cast<std::underlying_type<CommandState>::type>(CommandState::REQUESTING));
         } else {  // 車両が手動モードならinfra_approvalをtrueにし、設備連携結果はFAILで返す
-          RCLCPP_WARN(this->get_logger(), "vehicle is manual mode");
+          RCLCPP_INFO(this->get_logger(), "vehicle is manual mode");
           infra_approval_ = true;
           service_result_ = ExecuteInParkingTask::Response::FAIL;
         }
