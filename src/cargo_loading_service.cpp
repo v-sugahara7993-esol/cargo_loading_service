@@ -184,7 +184,7 @@ void CargoLoadingService::onInfrastructureStatus(const InfrastructureStateArray:
     infra_approval_ = (e.state == static_cast<uint8_t>(ReceiveState::APPROVAL));
 
     // 0b01じゃない場合、エラー出力
-    if (e.state != APPROVAL_VALUE) {
+    if (e.state != static_cast<uint8_t>(ReceiveState::APPROVAL)) {
       RCLCPP_ERROR(this->get_logger(), "invalid return value: %d", e.state);
     }
   }
