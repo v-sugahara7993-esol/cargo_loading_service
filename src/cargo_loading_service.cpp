@@ -149,7 +149,7 @@ void CargoLoadingService::onTimer()
         break;
     }
   } else {  // 設備連携が完了
-    RCLCPP_INFO(this->get_logger(), "finishing");
+    RCLCPP_INFO(this->get_logger(), "try reporting to infrastructure that the cargo loading process is over.");
     // SEND_ZEROをn秒間発出し、設備連携結果はSUCCESSで返し、timerをキャンセル
     const auto start_time = this->now();
     while (true) {
