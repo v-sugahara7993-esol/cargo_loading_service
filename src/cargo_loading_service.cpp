@@ -179,7 +179,7 @@ void CargoLoadingService::onTimeoutCheckTimer()
     sub_inparking_status_ = nullptr;
     aw_state_timeout_ = true;
     RCLCPP_ERROR(
-      this->get_logger(), "/in_parking/state timeout detected. aw_state_last_receive_time_ = %lf",
+      this->get_logger(), "/in_parking/state receive timeout. Last received time (seconds) = %lf",
       aw_state_last_receive_time_.seconds());
   }
 }
