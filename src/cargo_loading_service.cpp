@@ -58,8 +58,12 @@ CargoLoadingService::CargoLoadingService(const rclcpp::NodeOptions & options)
 
   // timer
   const auto period_ns = rclcpp::Rate(command_pub_hz_).period();
+  const auto timeout_check_period_ns = rclcpp::Rate(timeout_check_hz_).period();
   timer_ = create_timer(
     this, get_clock(), period_ns, std::bind(&CargoLoadingService::onTimer, this),
+    callback_group_subscription_);
+  timeout_check_timer_ = create_timer(
+    this, get_clock(), timeout_check_period_ns, std::bind(&CargoLoadingService::onTimeoutCheckTimer, this),
     callback_group_subscription_);
 
   // サービスcall時にtimerが回るように、最初にキャンセルしておく
@@ -114,19 +118,8 @@ void CargoLoadingService::onTimer()
 {
   // 設備連携が完了していない
   if (!infra_approval_) {
-    int32_t aw_state;
-    auto receive_time_diff = get_clock()->now() - aw_state_last_receive_time_;
-    if (aw_state_timeout_) {
-      aw_state = InParkingStatus::AW_EMERGENCY;
-    } else if (receive_time_diff.nanoseconds() > rclcpp::Duration(timeout_time_).nanoseconds()) {
-      aw_state = InParkingStatus::AW_EMERGENCY;
-      aw_state_timeout_ = true;
-      RCLCPP_ERROR(this->get_logger(), "/in_parking/state timeout detected.");
-    } else {
-      aw_state = aw_state_;
-    }
     // aw_stateで条件分岐
-    switch (aw_state) {
+    switch (aw_state_) {
       // AWがEmergencyの場合はERRORを発出し続ける
       case InParkingStatus::AW_EMERGENCY:
         publishCommand(static_cast<std::underlying_type<CommandState>::type>(CommandState::ERROR));
@@ -174,11 +167,32 @@ void CargoLoadingService::onTimer()
   }
 }
 
+void CargoLoadingService::onTimeoutCheckTimer()
+{
+  if (timer_->is_canceled() || aw_state_timeout_) {
+    return;
+  }
+
+  auto receive_time_diff = get_clock()->now() - aw_state_last_receive_time_;
+  if (receive_time_diff.seconds() > timeout_time_) {
+    aw_state_ = InParkingStatus::AW_EMERGENCY;
+    sub_inparking_status_ = nullptr;
+    aw_state_timeout_ = true;
+    RCLCPP_ERROR(
+      this->get_logger(), "/in_parking/state timeout detected. aw_state_last_receive_time_ = %lf",
+      aw_state_last_receive_time_.seconds());
+  }
+}
+
 void CargoLoadingService::onInParkingStatus(const InParkingStatus::ConstSharedPtr msg)
 {
   aw_state_last_receive_time_ = msg->stamp;
   aw_state_ = msg->aw_state;
   vehicle_operation_mode_ = msg->vehicle_operation_mode;
+
+  if (msg->aw_state == InParkingStatus::AW_EMERGENCY) {
+    sub_inparking_status_ = nullptr;
+  }
 
   RCLCPP_DEBUG(
     this->get_logger(), "inParkingStatus: %s", rosidl_generator_traits::to_yaml(*msg).c_str());

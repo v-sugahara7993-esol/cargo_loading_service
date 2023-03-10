@@ -46,7 +46,8 @@ private:
 
   // constants
   enum class CommandState : uint8_t { REQUESTING = 0b01, ERROR = 0b10 };
-  static constexpr std::chrono::nanoseconds timeout_time_{200 * 1000 * 1000};
+  static constexpr double timeout_time_{0.2};
+  static constexpr double timeout_check_hz_{10};
 
   // variable
   uint8_t infra_id_;
@@ -71,6 +72,7 @@ private:
 
   // Timer
   rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::TimerBase::SharedPtr timeout_check_timer_;
 
   // Callback
   void execCargoLoading(
@@ -79,6 +81,7 @@ private:
   void onInParkingStatus(const InParkingStatus::ConstSharedPtr msg_ptr);
   void onInfrastructureStatus(const InfrastructureStateArray::ConstSharedPtr msg_ptr);
   void onTimer();
+  void onTimeoutCheckTimer();
   void publishCommand(const uint8_t state);
 
   // Callback Group
