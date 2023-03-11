@@ -82,7 +82,7 @@ void CargoLoadingService::execCargoLoading(
 
   // 設備連携要求開始
   if (timer_->is_canceled()) {
-      timer_->reset();
+    timer_->reset();
     RCLCPP_DEBUG(this->get_logger(), "Timer restart");
   }
 
