@@ -74,6 +74,12 @@ void CargoLoadingService::execCargoLoading(
   const ExecuteInParkingTask::Request::SharedPtr request,
   const ExecuteInParkingTask::Response::SharedPtr response)
 {
+  if (request->id < static_cast<uint8_t>(InfraIdLimit::MIN) ||
+      request->id > static_cast<uint8_t>(InfraIdLimit::MAX)) {
+      RCLCPP_WARN(this->get_logger(), "Invalid ID = %d", request->id);
+      response->state = ExecuteInParkingTask::Response::FAIL;
+      return;
+  }
   // 設備ID取得
   infra_id_ = request->id;
   service_result_ = ExecuteInParkingTask::Response::SUCCESS;
@@ -123,13 +129,14 @@ void CargoLoadingService::onTimer()
       // AWがEmergencyの場合はERRORを発出し続ける
       case InParkingStatus::AW_EMERGENCY:
         publishCommand(static_cast<std::underlying_type<CommandState>::type>(CommandState::ERROR));
-        RCLCPP_ERROR(this->get_logger(), "AW emergency");
+        RCLCPP_ERROR_THROTTLE(
+          this->get_logger(), *this->get_clock(), 1000 /* ms */, "AW emergency");
         break;
       // AWが停留所外などではinfra_approvalをtrueにし、設備連携結果はFAILで返す
       case InParkingStatus::AW_OUT_OF_PARKING:
       case InParkingStatus::AW_UNAVAILABLE:
       case InParkingStatus::NONE:
-        RCLCPP_WARN(this->get_logger(), "AW_OUT_OF_PARKING or AW_UNAVAILABLE or NONE");
+        RCLCPP_INFO(this->get_logger(), "AW_OUT_OF_PARKING or AW_UNAVAILABLE or NONE");
         infra_approval_ = true;
         service_result_ = ExecuteInParkingTask::Response::FAIL;
         break;
@@ -143,7 +150,7 @@ void CargoLoadingService::onTimer()
           publishCommand(
           static_cast<std::underlying_type<CommandState>::type>(CommandState::REQUESTING));
         } else {  // 車両が手動モードならinfra_approvalをtrueにし、設備連携結果はFAILで返す
-          RCLCPP_WARN(this->get_logger(), "vehicle is manual mode");
+          RCLCPP_INFO(this->get_logger(), "vehicle is manual mode");
           infra_approval_ = true;
           service_result_ = ExecuteInParkingTask::Response::FAIL;
         }
@@ -152,7 +159,7 @@ void CargoLoadingService::onTimer()
         break;
     }
   } else {  // 設備連携が完了
-    RCLCPP_DEBUG(this->get_logger(), "finished");
+    RCLCPP_INFO(this->get_logger(), "try reporting to infrastructure that the cargo loading process is over.");
     // SEND_ZEROをn秒間発出し、設備連携結果はSUCCESSで返し、timerをキャンセル
     const auto start_time = this->now();
     while (true) {
@@ -161,6 +168,7 @@ void CargoLoadingService::onTimer()
       if (time_diff.seconds() > post_processing_time_) break;
       rclcpp::sleep_for(rclcpp::Rate(command_pub_hz_).period());
     }
+    RCLCPP_INFO(this->get_logger(), "complete reporting to infrastructure that the cargo loading process is over.");
     infra_approval_ = false;
     infra_id_ = InfrastructureState::INVALID_ID;
     timer_->cancel();
@@ -206,11 +214,11 @@ void CargoLoadingService::onInfrastructureStatus(const InfrastructureStateArray:
   if (itr != msg->states.end()) {
     const auto & e = msg->states.at(std::distance(msg->states.begin(), itr));
 
-    // 成功した場合、0b01が返ってくる
-    infra_approval_ = (e.state == 0b01);
+    // 成功した場合、APPROVALが返ってくる
+    infra_approval_ = (e.state == static_cast<uint8_t>(ReceiveState::APPROVAL));
 
-    // 0b01じゃない場合、エラー出力
-    if (e.state != 0b01) {
+    // APPROVALじゃない場合、エラー出力
+    if (e.state != static_cast<uint8_t>(ReceiveState::APPROVAL)) {
       RCLCPP_ERROR(this->get_logger(), "invalid return value: %d", e.state);
     }
   }
