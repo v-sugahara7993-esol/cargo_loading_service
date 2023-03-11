@@ -45,6 +45,7 @@ private:
 
   // constants
   enum class CommandState : uint8_t { REQUESTING = 0b01, ERROR = 0b10 };
+  enum class ReceiveState : uint8_t { APPROVAL = 0b01 };
   enum class InfraIdLimit : uint8_t { MIN = 1, MAX = 254 };
 
   // variable
