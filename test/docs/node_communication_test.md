@@ -19,8 +19,8 @@ The correspondence between the test objects and the point of view is as follows.
 |---|---|---|
 |1| `/cargo_loading/infrastructure_commands`      |1|
 |2| `/in_parking/state`                           |2|
-|3| `/infrastructure_status`                      |2|
-|4| `/parking/cargo_loading`                      |3|
+|3| `/v2i/infrastructure_states`                      |2|
+|4| `/in_parking/task`                      |3|
 
 * About checkpoint 4 in this module  
    The services handled by this module are ready immediately after node startup. Therefore, it is impossible to check this checkpoint.
@@ -30,41 +30,76 @@ The following are excluded from this test
 * Specific request/response values included in the topic or service.
   * Confirm by testing the functionality that handles values.
 
+## Preliminary Preparation
+
+In the test procedure, rqt_publisher is used for topic distribution in /in_parking/state.
+In this section, we make preliminary preparations for using rqt_publisher.
+
+1. Start the GUI with the following command.
+
+   ```sh
+   # Terminal
+   ros2 run rqt_publisher rqt_publisher
+   ```
+
+1. Set the following parameters in the launched GUI.  
+
+   |Parameter|Value|
+   |---|---|
+   |Topic|/in_parking/state|
+   |Type|in_parking_msgs/msg/InParkingStatus|
+   |Freq.|10|
+
+   ![rqt_publisher Image](image00.png)
+
+1. After setting these parameters, press the + button.
+
+1. Set the following parameters in the added /in_parking/state.
+
+   |Parameter|Value|
+   |---|---|
+   |stamp.sec|time()|
+   |stamp.nanosec|time() * 1e9 % 1e9|
+
+   ![rqt_publisher Image](image01.png)
+
+1. Check the box next to /in_parking/state.
+
 ## Test procedure
 
 Perform each step of the operation in turn. After each step is completed, check to see if the expectations described in the "After Step.X" section of the "Test report" are met.
 
 ### Step.1
 
+Set the following parameters in /in_parking/state in rqt_publisher.
+|Parameter|Value|
+|---|---|
+|aw_state|3|
+|vehicle_operation_mode|1|
+
 ```sh
 # Terminal-1
 # The log output level is changed to DEBUG in some places.
-ros2 launch cargo_loading_service cargo_loading_service.launch.py log-level:=debug
-```
-
-```sh
-# Terminal-2
-ros2 topic pub /in_parking/state in_parking_msgs/msg/InParkingStatus "{stamp: {sec: 1, nanosec: 1}, aw_state: 3, vehicle_operation_mode: 1}"
+ros2 run cargo_loading_service cargo_loading_service --ros-args --log-level debug
 ```
 
 ### Step.2
 
 ```sh
-# Terminal-3
+# Terminal-2
 ros2 topic echo /cargo_loading/infrastructure_commands
 ```
 
 ```sh
-# Terminal-4
-ros2 service call /parking/cargo_loading in_parking_msgs/srv/ExecuteInParkingTask "{key: '100', value: '200'}"
+# Terminal-3
+ros2 service call /in_parking/task in_parking_msgs/srv/ExecuteInParkingTask "{id: '200'}"
 ```
-
 
 ### Step.3
 
 ```sh
-# Terminal-5
-ros2 topic pub --once /infrastructure_status v2i_interface_msgs/msg/InfrastructureStateArray "{stamp: {sec: 1, nanosec: 1}, states: [{stamp: {sec: 1, nanosec: 1}, type: 'eva_beacon_system', id: '200', approval: true}]}"
+# Terminal-4
+ros2 topic pub --once /v2i/infrastructure_states v2i_interface_msgs/msg/InfrastructureStateArray "{stamp: {sec: 1, nanosec: 1}, states: [{stamp: {sec: 1, nanosec: 1}, id: '200', state: '1'}]}"
 ```
 
 ### Test procedure and criteria details
@@ -76,18 +111,14 @@ ros2 topic pub --once /infrastructure_status v2i_interface_msgs/msg/Infrastructu
 - Expectation
   - `/in_parking/state`
     - cargo_loading_service outputs the contents of the subscribed messages to the debug log.
-- Result
-  - OK
 
 ```sh
 # Terminal-1
-[component_container_mt-1] [DEBUG] [1676440283.026451770] [cargo_loading.cargo_loading_service]: Subscribed /in_parking/state:stamp:
-[component_container_mt-1]   sec: 1
-[component_container_mt-1]   nanosec: 1
-[component_container_mt-1] aw_state: 3
-[component_container_mt-1] vehicle_operation_mode: 1
-[component_container_mt-1] on_arrived_goal: true
-[component_container_mt-1] 
+[DEBUG] [1681281290.237293500] [cargo_loading_service]: inParkingStatus: stamp:
+  sec: 1681281290
+  nanosec: 237037056
+aw_state: 3
+vehicle_operation_mode: 1
 ```
 
 
@@ -100,39 +131,27 @@ ros2 topic pub --once /infrastructure_status v2i_interface_msgs/msg/Infrastructu
     - Send interval 200msec.
 
 ```sh
-# Terminal-3
+# Terminal-2
 stamp:
-  sec: 1676440891
-  nanosec: 175108980
+  sec: 1681281333
+  nanosec: 353043285
 commands:
 - stamp:
-    sec: 1676440891
-    nanosec: 175108980
-  type: eva_beacon_system
-  id: '200'
+    sec: 1681281333
+    nanosec: 353043285
+  id: 200
   state: 1
 ---
 stamp:
-  sec: 1676440891
-  nanosec: 375340288
+  sec: 1681281333
+  nanosec: 553111519
 commands:
 - stamp:
-    sec: 1676440891
-    nanosec: 375340288
-  type: eva_beacon_system
-  id: '200'
+    sec: 1681281333
+    nanosec: 553111519
+  id: 200
   state: 1
 ---
-stamp:
-  sec: 1676440891
-  nanosec: 575501214
-commands:
-- stamp:
-    sec: 1676440891
-    nanosec: 575501214
-  type: eva_beacon_system
-  id: '200'
-  state: 1
 ```
 
 #### Test procedure and criteria details of target No.3
@@ -140,23 +159,21 @@ commands:
 **After Step.3**
 
 - Expectation
-  - `/infrastructure_status`
+  - `/v2i/infrastructure_states`
     - cargo_loading_service outputs the contents of the subscribed messages to the debug log.
 
 ```sh
 # Terminal-1
-[component_container_mt-1] [DEBUG] [1676441102.955167577] [cargo_loading.cargo_loading_service]: Subscribed /infrastructure_status:stamp:
-[component_container_mt-1]   sec: 1
-[component_container_mt-1]   nanosec: 1
-[component_container_mt-1] states:
-[component_container_mt-1] -
-[component_container_mt-1]   stamp:
-[component_container_mt-1]     sec: 1
-[component_container_mt-1]     nanosec: 1
-[component_container_mt-1]   type: "eva_beacon_system"
-[component_container_mt-1]   id: "200"
-[component_container_mt-1]   approval: true
-[component_container_mt-1] 
+[DEBUG] [1681281569.446458085] [cargo_loading_service]: InfrastructureStatus: stamp:
+  sec: 1
+  nanosec: 1
+states:
+-
+  stamp:
+    sec: 1
+    nanosec: 1
+  id: 200
+  state: 1
 ```
 
 #### Test procedure and criteria details of target No.4
@@ -164,12 +181,12 @@ commands:
 **After Step.3**
 
 - Expectation
-  - `/parking/cargo_loading`
+  - `/in_parking/task`
     - A response is returned to the service request.
 
 ```sh
-# Terminal-4
-requester: making request: in_parking_msgs.srv.ExecuteInParkingTask_Request(key='100', value='200')
+# Terminal-3
+requester: making request: in_parking_msgs.srv.ExecuteInParkingTask_Request(id=200)
 
 response:
 in_parking_msgs.srv.ExecuteInParkingTask_Response(state=1)
